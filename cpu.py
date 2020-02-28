@@ -117,10 +117,10 @@ class CPU:
         elif op == "MUL": # Multiply
             self.reg[reg_a] *= self.reg[reg_b]
         elif op == "CMP": # Compare
-            if self.reg[reg_a] < self.reg[reg_b]:
-                self.less = 1
-            elif self.reg[reg_a] > self.reg[reg_b]:
+            if self.reg[reg_a] > self.reg[reg_b]:
                 self.greater = 1
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.less = 1
             elif self.reg[reg_a] == self.reg[reg_b]:
                 self.equal = 1
         else:
@@ -154,14 +154,16 @@ class CPU:
         # that result in `IR`, the _Instruction Register_.
         # `IR`, contains a copy of the currently executing instruction
         while True:
+            # set the Instruction Register
             IR = self.ram[self.pc]
+            # Read the bytes at `PC+1` and `PC+2` from RAM into variables `operand_a` and `operand_b`
+            operand_a = self.ram[self.pc + 1]
+            operand_b = self.ram[self.pc + 2]
             operand_c = IR >> 6
             sets_pc = IR >> 4 & 0b0001
+            
             # LDI
             if IR == LDI:
-                # Read the bytes at `PC+1` and `PC+2` from RAM into variables `operand_a` and `operand_b`
-                operand_a = self.ram[self.pc + 1]
-                operand_b = self.ram[self.pc + 2]
                 # store the data
                 self.reg[operand_a] = operand_b
                 # increment the PC by 3 to skip the arguments
@@ -209,6 +211,26 @@ class CPU:
             elif IR == RET:
                 self.pc = self.ram[self.reg[SP]]
                 self.reg[SP] += 1
+            # CMP(Compare)
+            elif IR == CMP:
+                self.alu("CMP", operand_a, operand_b)
+                # self.pc +=3
+            # JMP(Jump)
+            elif IR == JMP:
+                # jump to an address
+                self.pc = self.reg[operand_a]
+            # JEQ(Jump If Equal)
+            elif IR == JEQ:
+                if self.equal is 1:
+                    self.pc = self.reg[operand_a]
+                else:
+                    self.pc += 2
+            # JNE(Jump If Not Equal)
+            elif IR == JNE:
+                if self.equal is 0:
+                    self.pc = self.reg[operand_a]
+                else:
+                    self.pc += 2    
             # HLT
             elif IR == HLT:
                 sys.exit(0)
